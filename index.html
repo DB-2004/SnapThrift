@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SnapThrift</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #faf7f2; }
+:root {
+  --brown: #6b4f2e; --brown-light: #efe8da; --brown-mid: #c4b89a;
+  --brown-dark: #3d2c1e; --cream: #faf7f2; --muted: #8a7560;
+  --green: #3a7a3a; --green-light: #e8f4e8; --green-border: #a8d4a8;
+}
+.app { background: var(--cream); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+.topbar { background: var(--brown); color: #f5efe6; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+.topbar-right { display: flex; gap: 10px; }
+.icon-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 8px; color: #f5efe6; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+.nav-tabs { display: flex; background: var(--cream); border-bottom: 1px solid var(--brown-mid); }
+.nav-tab { flex: 1; text-align: center; padding: 11px 0; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.nav-tab.active { color: var(--brown); border-bottom-color: var(--brown); font-weight: 600; }
+.screen { display: none; padding: 14px; }
+.screen.active { display: block; }
+.search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.search-input { flex: 1; background: var(--brown-light); border: 1px solid var(--brown-mid); border-radius: 20px; padding: 9px 14px; font-size: 13px; color: var(--brown-dark); outline: none; }
+.filter-btn { background: var(--brown); color: #faf7f2; border: none; border-radius: 20px; padding: 9px 16px; font-size: 12px; cursor: pointer; }
+.filter-panel { background: #fff; border-radius: 14px; border: 1px solid #d9cdb8; padding: 14px; margin-bottom: 12px; }
+.filter-section-title { font-size: 12px; font-weight: 600; color: var(--brown-dark); margin: 10px 0 6px; }
+.filter-section-title:first-child { margin-top: 0; }
+.filter-row-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.clear-link { font-size: 11px; color: var(--brown); cursor: pointer; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap; }
+.chip { white-space: nowrap; font-size: 11px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--brown-mid); background: var(--cream); color: var(--brown); cursor: pointer; }
+.chip.on { background: var(--brown); color: #faf7f2; border-color: var(--brown); }
+.size-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.sz { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--brown-mid); background: var(--cream); color: var(--brown); cursor: pointer; }
+.sz.on { background: var(--brown-mid); color: var(--brown-dark); font-weight: 600; }
+.results-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.card { background: #fff; border-radius: 12px; border: 1px solid #d9cdb8; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+.card:hover { border-color: var(--brown); }
+.card-img { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.card-body { padding: 8px 10px 10px; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--brown-dark); margin-bottom: 2px; }
+.card-sub { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.card-price { font-size: 13px; color: var(--brown); font-weight: 600; }
+.badge { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 8px; background: var(--brown-light); color: var(--brown); font-weight: 600; margin-left: 4px; }
+.detail-back { font-size: 13px; color: var(--brown); cursor: pointer; margin-bottom: 12px; font-weight: 500; }
+.detail-img { height: 220px; background: var(--brown-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 80px; margin-bottom: 14px; overflow: hidden; }
+.detail-img img { width: 100%; height: 100%; object-fit: cover; }
+.detail-title { font-size: 20px; font-weight: 600; color: var(--brown-dark); margin-bottom: 4px; }
+.detail-price { font-size: 24px; font-weight: 600; color: var(--brown); margin-bottom: 8px; }
+.detail-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+.seller-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px; background: var(--brown-light); border-radius: 10px; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--brown-mid); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--brown-dark); flex-shrink: 0; }
+.seller-name { font-size: 13px; font-weight: 600; color: var(--brown-dark); }
+.stars { font-size: 11px; color: #c4a35a; }
+.btn-primary { width: 100%; background: var(--brown); color: #faf7f2; border: none; border-radius: 20px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+.btn-secondary { width: 100%; background: var(--cream); color: var(--brown); border: 1.5px solid var(--brown); border-radius: 20px; padding: 12px; font-size: 13px; cursor: pointer; margin-bottom: 8px; }
+.section-title { font-size: 14px; font-weight: 600; color: var(--brown-dark); margin-bottom: 12px; }
+.upload-zone { border: 2px dashed var(--brown-mid); border-radius: 14px; padding: 32px 20px; text-align: center; margin-bottom: 14px; background: var(--brown-light); cursor: pointer; transition: border-color 0.15s; }
+.upload-zone:hover { border-color: var(--brown); }
+.upload-big { font-size: 44px; margin-bottom: 10px; }
+.upload-label { font-size: 15px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--muted); }
+.ai-box { background: var(--green-light); border-radius: 12px; border: 1px solid var(--green-border); padding: 14px; margin-bottom: 14px; }
+.ai-header { font-size: 11px; color: var(--green); font-weight: 600; margin-bottom: 10px; }
+.ai-field { background: #fff; border-radius: 8px; padding: 9px 10px; font-size: 13px; color: var(--brown-dark); margin-bottom: 7px; border: 1px solid var(--green-border); width: 100%; outline: none; font-family: inherit; }
+.ai-field:focus { border-color: var(--green); }
+.ai-row { display: flex; gap: 8px; }
+.field-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; margin-top: 8px; }
+.my-listing { display: flex; gap: 12px; align-items: center; background: #fff; border-radius: 12px; border: 1px solid #d9cdb8; padding: 10px; margin-bottom: 8px; cursor: pointer; }
+.my-listing:hover { border-color: var(--brown); }
+.my-listing-img { width: 60px; height: 60px; border-radius: 10px; background: var(--brown-light); display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; overflow: hidden; }
+.my-listing-img img { width: 100%; height: 100%; object-fit: cover; }
+.my-listing-info { flex: 1; }
+.my-listing-title { font-size: 13px; font-weight: 600; color: var(--brown-dark); margin-bottom: 2px; }
+.my-listing-sub { font-size: 11px; color: var(--muted); }
+.my-listing-price { font-size: 15px; font-weight: 600; color: var(--brown); }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; background: #3a7a3a; }
+.hidden { display: none; }
+.loading-box { text-align: center; padding: 24px; }
+.loading-box p { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--brown-light); border-top-color: var(--brown); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.profile-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding: 14px; background: #fff; border-radius: 14px; border: 1px solid #d9cdb8; }
+.profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: var(--brown-mid); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: var(--brown-dark); flex-shrink: 0; }
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+.stat-card { background: #fff; border-radius: 10px; border: 1px solid #d9cdb8; padding: 10px; text-align: center; }
+.stat-num { font-size: 20px; font-weight: 600; color: var(--brown); }
+.stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.empty-state { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 13px; }
+.empty-icon { font-size: 40px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <span class="logo">SnapThrift</span>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="showTab('sell')">+ Sell</button>
+      <button class="icon-btn" onclick="showTab('profile')">Profile</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active" id="tab-browse" onclick="showTab('browse')">Browse</div>
+    <div class="nav-tab" id="tab-sell" onclick="showTab('sell')">Sell</div>
+    <div class="nav-tab" id="tab-profile" onclick="showTab('profile')">My Listings</div>
+  </div>
+
+  <!-- BROWSE -->
+  <div class="screen active" id="screen-browse">
+    <div class="search-row">
+      <input class="search-input" id="search" placeholder="Search listings..." oninput="renderFeed()" />
+      <button class="filter-btn" onclick="toggleFilters()">Filters</button>
+    </div>
+    <div id="filter-panel" class="filter-panel hidden">
+      <div class="filter-row-hdr">
+        <span class="filter-section-title" style="margin:0;">Section</span>
+        <span class="clear-link" onclick="clearFilters()">Reset all</span>
+      </div>
+      <div class="chips" id="section-chips" style="margin-bottom:4px;">
+        <div class="chip on" data-val="all" onclick="toggleChip(this,'section')">Everyone</div>
+        <div class="chip" data-val="womens" onclick="toggleChip(this,'section')">Women's</div>
+        <div class="chip" data-val="mens" onclick="toggleChip(this,'section')">Men's</div>
+        <div class="chip" data-val="kids" onclick="toggleChip(this,'section')">Kids</div>
+        <div class="chip" data-val="unisex" onclick="toggleChip(this,'section')">Unisex</div>
+      </div>
+      <div class="filter-section-title">Category</div>
+      <div class="chips" id="cat-chips" style="margin-bottom:4px;">
+        <div class="chip on" data-val="all" onclick="toggleChip(this,'cat')">All</div>
+        <div class="chip" data-val="Clothing" onclick="toggleChip(this,'cat')">Clothing</div>
+        <div class="chip" data-val="Shoes" onclick="toggleChip(this,'cat')">Shoes</div>
+        <div class="chip" data-val="Bags" onclick="toggleChip(this,'cat')">Bags</div>
+        <div class="chip" data-val="Furniture" onclick="toggleChip(this,'cat')">Furniture</div>
+        <div class="chip" data-val="Books" onclick="toggleChip(this,'cat')">Books</div>
+        <div class="chip" data-val="Electronics" onclick="toggleChip(this,'cat')">Electronics</div>
+      </div>
+      <div class="filter-section-title">Clothing size</div>
+      <div class="size-row" id="size-chips">
+        <div class="sz" onclick="toggleSize(this)">XS</div>
+        <div class="sz" onclick="toggleSize(this)">S</div>
+        <div class="sz" onclick="toggleSize(this)">M</div>
+        <div class="sz" onclick="toggleSize(this)">L</div>
+        <div class="sz" onclick="toggleSize(this)">XL</div>
+        <div class="sz" onclick="toggleSize(this)">XXL</div>
+        <div class="sz" onclick="toggleSize(this)">One size</div>
+      </div>
+      <div class="filter-section-title">Condition</div>
+      <div class="chips" id="cond-chips">
+        <div class="chip on" data-val="all" onclick="toggleChip(this,'cond')">All</div>
+        <div class="chip" data-val="Like New" onclick="toggleChip(this,'cond')">Like New</div>
+        <div class="chip" data-val="Good" onclick="toggleChip(this,'cond')">Good</div>
+        <div class="chip" data-val="Fair" onclick="toggleChip(this,'cond')">Fair</div>
+      </div>
+    </div>
+    <div class="results-label" id="results-label"></div>
+    <div class="grid" id="feed"></div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-back" onclick="goBack()">← Back</div>
+    <div class="detail-img" id="d-img"></div>
+    <div class="detail-title" id="d-title"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div class="detail-price" id="d-price"></div>
+      <span class="badge" id="d-cond"></span>
+      <span class="badge" id="d-size"></span>
+    </div>
+    <div class="detail-desc" id="d-desc"></div>
+    <div class="seller-row">
+      <div class="avatar" id="d-avatar"></div>
+      <div>
+        <div class="seller-name" id="d-seller"></div>
+        <div class="stars">★★★★★ <span style="font-size:11px;color:var(--muted);" id="d-sales"></span></div>
+      </div>
+    </div>
+    <button class="btn-primary" id="d-buy-btn">Buy Now</button>
+    <button class="btn-secondary">Message Seller</button>
+  </div>
+
+  <!-- SELL -->
+  <div class="screen" id="screen-sell">
+    <div class="section-title">List an item</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div id="upload-preview">
+        <div class="upload-big">📷</div>
+        <div class="upload-label">Snap or upload a photo</div>
+        <div class="upload-sub">AI will write your listing instantly</div>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleUpload(event)" />
+    <div id="ai-loading" class="loading-box hidden">
+      <div class="spinner"></div>
+      <p>AI is writing your listing...</p>
+    </div>
+    <div id="ai-result" class="hidden">
+      <div class="ai-box">
+        <div class="ai-header">✦ AI generated — tap any field to edit</div>
+        <input class="ai-field" id="ai-title" placeholder="Title" />
+        <textarea class="ai-field" id="ai-desc" rows="3" style="resize:none;" placeholder="Description"></textarea>
+        <div class="ai-row">
+          <input class="ai-field" id="ai-cat" placeholder="Category" style="flex:1;" />
+          <input class="ai-field" id="ai-price" placeholder="Price" style="width:90px;" />
+        </div>
+        <div class="ai-row">
+          <input class="ai-field" id="ai-section" placeholder="Section" style="flex:1;" />
+          <input class="ai-field" id="ai-size" placeholder="Size" style="width:80px;" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="postListing()">Post Listing</button>
+      <button class="btn-secondary" onclick="resetSell()">Start over</button>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="profile-header">
+      <div class="profile-avatar">ME</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;color:var(--brown-dark);">My Profile</div>
+        <div style="font-size:12px;color:var(--muted);">East Lansing, MI</div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num" id="stat-listings">0</div><div class="stat-label">Listings</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-sold">0</div><div class="stat-label">Sold</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-earned">$0</div><div class="stat-label">Earned</div></div>
+    </div>
+    <div class="section-title">Active listings</div>
+    <div id="my-listings-container"></div>
+    <div id="no-listings" class="empty-state">
+      <div class="empty-icon">🏷️</div>
+      <div>No listings yet</div>
+      <div style="margin-top:6px;font-size:12px;">Go to Sell to post your first item!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var listings = [
+  {id:1,title:'Vintage Leather Crossbody Bag',price:24,emoji:'👜',bg:'#f0e6d3',cat:'Bags',section:'womens',size:'One size',cond:'Good',desc:'Brown leather crossbody bag, brass hardware, minimal wear. Interior clean with one zip pocket. Great everyday carry.',seller:'Maria R.',sales:'48 sales',imgData:null},
+  {id:2,title:"Levi's Denim Jacket",price:38,emoji:'🧥',bg:'#e3eed8',cat:'Clothing',section:'womens',size:'M',cond:'Like New',desc:"Classic Levi's trucker jacket in medium wash. Worn twice, like new condition. Size M.",seller:'Jake T.',sales:'12 sales',imgData:null},
+  {id:3,title:'Floral Wrap Dress',price:18,emoji:'👗',bg:'#f5e6f0',cat:'Clothing',section:'womens',size:'S',cond:'Good',desc:'Lightweight wrap dress with floral print. Hits just above the knee. Hand wash only.',seller:'Priya S.',sales:'31 sales',imgData:null},
+  {id:4,title:'Vintage Book Lot (10 pcs)',price:12,emoji:'📚',bg:'#ddeaf5',cat:'Books',section:'unisex',size:'One size',cond:'Good',desc:'Mix of classic fiction and non-fiction. All in readable condition. Perfect for a shelf refresh.',seller:'Tom K.',sales:'7 sales',imgData:null},
+  {id:5,title:'Boho Table Lamp',price:19,emoji:'🏮',bg:'#f5ead8',cat:'Furniture',section:'unisex',size:'One size',cond:'Fair',desc:'Wicker-style table lamp with warm bulb included. Minor scuff on base. Works perfectly.',seller:'Ana W.',sales:'22 sales',imgData:null},
+  {id:6,title:'Nike Air Max 90',price:55,emoji:'👟',bg:'#e8f0e3',cat:'Shoes',section:'mens',size:'M',cond:'Good',desc:"Men's Nike Air Max 90 in white/gray. US size 10. Some sole wear but upper is clean.",seller:'Chris M.',sales:'19 sales',imgData:null},
+  {id:7,title:'Vintage Band Tee',price:14,emoji:'👕',bg:'#f5f0e0',cat:'Clothing',section:'mens',size:'L',cond:'Good',desc:'Faded vintage-style band tee. Soft cotton, pre-shrunk. Size L.',seller:'Sam B.',sales:'5 sales',imgData:null},
+  {id:8,title:'Kids Winter Coat',price:22,emoji:'🧤',bg:'#e0edf5',cat:'Clothing',section:'kids',size:'One size',cond:'Like New',desc:'Warm puffy coat for kids ages 4-6. Only worn one season. Navy blue.',seller:'Lisa P.',sales:'9 sales',imgData:null},
+  {id:9,title:'Polaroid Camera',price:45,emoji:'📷',bg:'#f0e8f5',cat:'Electronics',section:'unisex',size:'One size',cond:'Good',desc:'Polaroid Now camera in blush pink. Tested and working. Film not included.',seller:'Dana H.',sales:'3 sales',imgData:null},
+  {id:10,title:'Cowboy Boots',price:65,emoji:'👢',bg:'#f5ece0',cat:'Shoes',section:'womens',size:'S',cond:'Good',desc:"Brown leather cowboy boots, US women's size 7. Worn a handful of times.",seller:'Rosa L.',sales:'14 sales',imgData:null}
+];
+var myListings = [];
+var activeSection = 'all', activeCat = 'all', activeSizes = [], activeCond = 'all';
+var prevTab = 'browse';
+var soldCount = 0, earnedTotal = 0;
+var currentUploadData = null;
+
+function showTab(tab) {
+  if(tab !== 'detail') prevTab = tab;
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('screen-' + tab).classList.add('active');
+  var tabEl = document.getElementById('tab-' + tab);
+  if(tabEl) tabEl.classList.add('active');
+  if(tab === 'profile') renderProfile();
+  if(tab === 'browse') renderFeed();
+}
+
+function goBack() { showTab(prevTab); }
+
+function toggleFilters() {
+  document.getElementById('filter-panel').classList.toggle('hidden');
+}
+
+function toggleChip(el, group) {
+  document.querySelectorAll('#' + group + '-chips .chip').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  if(group === 'section') activeSection = el.dataset.val;
+  if(group === 'cat') activeCat = el.dataset.val;
+  if(group === 'cond') activeCond = el.dataset.val;
+  renderFeed();
+}
+
+function toggleSize(el) {
+  el.classList.toggle('on');
+  activeSizes = Array.from(document.querySelectorAll('#size-chips .sz.on')).map(function(s){ return s.textContent; });
+  renderFeed();
+}
+
+function clearFilters() {
+  activeSection = 'all'; activeCat = 'all'; activeSizes = []; activeCond = 'all';
+  document.querySelectorAll('#section-chips .chip').forEach(function(c,i){ c.classList.toggle('on',i===0); });
+  document.querySelectorAll('#cat-chips .chip').forEach(function(c,i){ c.classList.toggle('on',i===0); });
+  document.querySelectorAll('#size-chips .sz').forEach(function(c){ c.classList.remove('on'); });
+  document.querySelectorAll('#cond-chips .chip').forEach(function(c,i){ c.classList.toggle('on',i===0); });
+  renderFeed();
+}
+
+function renderFeed() {
+  var q = (document.getElementById('search').value || '').toLowerCase();
+  var all = listings.concat(myListings);
+  var filtered = all.filter(function(item) {
+    if(q && !item.title.toLowerCase().includes(q) && !item.cat.toLowerCase().includes(q)) return false;
+    if(activeSection !== 'all' && item.section !== activeSection) return false;
+    if(activeCat !== 'all' && item.cat !== activeCat) return false;
+    if(activeSizes.length > 0 && !activeSizes.includes(item.size)) return false;
+    if(activeCond !== 'all' && item.cond !== activeCond) return false;
+    return true;
+  });
+  document.getElementById('results-label').textContent = filtered.length + ' listing' + (filtered.length !== 1 ? 's' : '') + ' found';
+  document.getElementById('feed').innerHTML = filtered.map(function(item) {
+    var imgContent = item.imgData
+      ? '<img src="' + item.imgData + '" style="width:100%;height:100%;object-fit:cover;" />'
+      : item.emoji;
+    return '<div class="card" onclick="openDetail(' + item.id + ')">' +
+      '<div class="card-img" style="background:' + (item.bg||'#efe8da') + '">' + imgContent + '</div>' +
+      '<div class="card-body">' +
+        '<div class="card-title">' + item.title + '</div>' +
+        '<div class="card-sub">' + item.cat + ' · ' + item.size + '</div>' +
+        '<div class="card-price">$' + item.price + '<span class="badge">' + item.cond + '</span></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function openDetail(id) {
+  var all = listings.concat(myListings);
+  var item = all.find(function(x){ return x.id === id; });
+  if(!item) return;
+  var imgEl = document.getElementById('d-img');
+  if(item.imgData) {
+    imgEl.innerHTML = '<img src="' + item.imgData + '" />';
+  } else {
+    imgEl.innerHTML = item.emoji;
+    imgEl.style.background = item.bg || '#efe8da';
+  }
+  document.getElementById('d-title').textContent = item.title;
+  document.getElementById('d-price').textContent = '$' + item.price;
+  document.getElementById('d-cond').textContent = item.cond;
+  document.getElementById('d-size').textContent = item.size;
+  document.getElementById('d-desc').textContent = item.desc;
+  document.getElementById('d-seller').textContent = item.seller || 'You';
+  document.getElementById('d-avatar').textContent = (item.seller||'Me').split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+  document.getElementById('d-sales').textContent = item.sales || '0 sales';
+  var isMine = myListings.some(function(x){ return x.id === id; });
+  var buyBtn = document.getElementById('d-buy-btn');
+  buyBtn.textContent = isMine ? 'Mark as Sold — $' + item.price : 'Buy Now — $' + item.price;
+  buyBtn.onclick = isMine ? function(){ markSold(id); } : function(){ alert('Checkout coming soon! Payment via Stripe.'); };
+  showTab('detail');
+}
+
+function markSold(id) {
+  var idx = myListings.findIndex(function(x){ return x.id === id; });
+  if(idx > -1) {
+    earnedTotal += myListings[idx].price;
+    soldCount++;
+    myListings.splice(idx, 1);
+    showTab('profile');
+  }
+}
+
+function handleUpload(event) {
+  var file = event.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    currentUploadData = e.target.result;
+    document.getElementById('upload-preview').innerHTML =
+      '<img src="' + e.target.result + '" style="width:100%;height:160px;object-fit:cover;border-radius:10px;" />';
+    generateAI(file, e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function generateAI(file, dataUrl) {
+  document.getElementById('ai-loading').classList.remove('hidden');
+  document.getElementById('ai-result').classList.add('hidden');
+  var base64 = dataUrl.split(',')[1];
+  var mediaType = file.type || 'image/jpeg';
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: 'You are a thrift marketplace listing assistant. Look at this item photo and generate a listing. Respond ONLY with a JSON object, no preamble or markdown, with these exact keys: title (short catchy name), description (2-3 sentences about condition and features), category (one of: Clothing, Shoes, Bags, Furniture, Books, Electronics, Other), section (one of: womens, mens, kids, unisex), size (one of: XS, S, M, L, XL, XXL, One size), condition (one of: Like New, Good, Fair), price (number, fair thrift price in USD).' }
+        ]
+      }]
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    var text = data.content.map(function(c){ return c.text||''; }).join('');
+    var clean = text.replace(/```json|```/g,'').trim();
+    var parsed = JSON.parse(clean);
+    fillAIFields(parsed);
+  })
+  .catch(function() {
+    fillAIFields({ title:'Thrift Find', description:'Great secondhand item in good condition. Ready for a new home!', category:'Clothing', section:'unisex', size:'M', condition:'Good', price:20 });
+  });
+}
+
+function fillAIFields(p) {
+  var sectionNames = {womens:"Women's", mens:"Men's", unisex:'Unisex', kids:'Kids'};
+  document.getElementById('ai-title').value = p.title || '';
+  document.getElementById('ai-desc').value = p.description || '';
+  document.getElementById('ai-cat').value = p.category || '';
+  document.getElementById('ai-section').value = sectionNames[p.section] || p.section || '';
+  document.getElementById('ai-size').value = p.size || '';
+  document.getElementById('ai-price').value = '$' + (p.price || '');
+  document.getElementById('ai-loading').classList.add('hidden');
+  document.getElementById('ai-result').classList.remove('hidden');
+}
+
+function postListing() {
+  var emojis = ['👗','👕','👜','👟','👢','📚','🏮','🧥','📷','🧤'];
+  var priceStr = document.getElementById('ai-price').value.replace('$','');
+  var secRaw = document.getElementById('ai-section').value.toLowerCase().replace("'s",'s').replace(/ /g,'');
+  var newItem = {
+    id: Date.now(),
+    title: document.getElementById('ai-title').value || 'My Item',
+    price: parseFloat(priceStr) || 20,
+    emoji: emojis[Math.floor(Math.random()*emojis.length)],
+    bg: '#efe8da',
+    imgData: currentUploadData,
+    cat: document.getElementById('ai-cat').value || 'Other',
+    section: secRaw,
+    size: document.getElementById('ai-size').value || 'One size',
+    cond: 'Good',
+    desc: document.getElementById('ai-desc').value || '',
+    seller: 'You',
+    sales: '0 sales'
+  };
+  myListings.unshift(newItem);
+  resetSell();
+  showTab('profile');
+}
+
+function resetSell() {
+  document.getElementById('upload-preview').innerHTML =
+    '<div class="upload-big">📷</div><div class="upload-label">Snap or upload a photo</div><div class="upload-sub">AI will write your listing instantly</div>';
+  document.getElementById('file-input').value = '';
+  document.getElementById('ai-result').classList.add('hidden');
+  document.getElementById('ai-loading').classList.add('hidden');
+  currentUploadData = null;
+}
+
+function renderProfile() {
+  document.getElementById('stat-listings').textContent = myListings.length;
+  document.getElementById('stat-sold').textContent = soldCount;
+  document.getElementById('stat-earned').textContent = '$' + earnedTotal;
+  var container = document.getElementById('my-listings-container');
+  var noEl = document.getElementById('no-listings');
+  if(myListings.length === 0) { container.innerHTML = ''; noEl.style.display = 'block'; return; }
+  noEl.style.display = 'none';
+  container.innerHTML = myListings.map(function(item) {
+    var imgContent = item.imgData
+      ? '<img src="' + item.imgData + '" />'
+      : item.emoji;
+    return '<div class="my-listing" onclick="openDetail(' + item.id + ')">' +
+      '<div class="my-listing-img">' + imgContent + '</div>' +
+      '<div class="my-listing-info">' +
+        '<div class="my-listing-title">' + item.title + '</div>' +
+        '<div class="my-listing-sub"><span class="status-dot"></span>Active · ' + item.cat + ' · ' + item.size + '</div>' +
+      '</div>' +
+      '<div class="my-listing-price">$' + item.price + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+renderFeed();
+</script>
+</body>
+</html>
